@@ -97,6 +97,9 @@ CREATE TABLE IF NOT EXISTS ETRECOORDENADASROD (
             await db.insert('ETRECOORDENADASROD', data);
           }
         }
+        if (kDebugMode) {
+          print('Banco de dados criado com sucesso em: $path');
+        }
       },
     );
   }

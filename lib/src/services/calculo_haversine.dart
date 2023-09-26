@@ -23,10 +23,5 @@ double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
   final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
   final double distance = earthRadius * c;
 
-  // Verificar se as coordenadas são iguais
-  if (lat1 == lat2 && lon1 == lon2) {
-    return 0.0;
-  } else {
-    return distance;
-  }
+  return distance;
 }

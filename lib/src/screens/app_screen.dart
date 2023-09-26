@@ -24,13 +24,12 @@ class _AppScreenState extends State<AppScreen> {
   // Estado para controlar se a localização foi detectada
   bool _locationDetected = false;
   // Adicione uma variável para controlar se o banco de dados foi inicializado
-  bool _databaseInitialized = false;
 
   final DatabaseHelper _databaseHelper = DatabaseHelper();
-  String? roadName;
-  double? km;
+  String? roadName = "Não encontrado";
+  double? km = 0.0;
 
-  List<Map<String, dynamic>> _nearbyRoads = [];
+  final List<Map<String, dynamic>> _nearbyRoads = [];
 
   @override
   void initState() {
@@ -40,7 +39,6 @@ class _AppScreenState extends State<AppScreen> {
     // Inicializa os controladores dos campos de texto
     _latitudeController = TextEditingController();
     _longitudeController = TextEditingController();
-
     _initializeApp();
   }
 
@@ -53,7 +51,6 @@ class _AppScreenState extends State<AppScreen> {
     try {
       await _databaseHelper.initDatabase('assets/etrecoordenadasprod.json' as Map<String, dynamic>);
       setState(() {
-        _databaseInitialized = true;
       });
     } catch (e) {
       debugPrint(e.toString());
@@ -69,7 +66,7 @@ class _AppScreenState extends State<AppScreen> {
       );
 
       // Atualiza as coordenadas atuais do usuário
-      _coordinates = [_location!.latitude, _location!.longitude];
+      _coordinates = [_location?.latitude ?? 0.0, _location?.longitude ?? 0.0];
       // Atualiza os controladores dos campos de texto
       _latitudeController.text = _coordinates[0].toString();
       _longitudeController.text = _coordinates[1].toString();
@@ -81,7 +78,7 @@ class _AppScreenState extends State<AppScreen> {
       // Exibe um erro se ocorrer algum problema
       debugPrint(e.toString());
       // Mostra o AlertDialog de erro de localization
-      //alertLocation(context); // Método para exibir o AlertDialog de erro de localização
+      alertLocation(context); // Método para exibir o AlertDialog de erro de localização
     }
   }
 
@@ -92,55 +89,69 @@ class _AppScreenState extends State<AppScreen> {
     final List<Map<String, dynamic>> nearbyRoads = [];
 
     for (final row in result) {
-      final roadLatitude = row['VLLATITUDE'] != null ? row['VLLATITUDE'] as double : 0.0;
-      final roadLongitude = row['VLLONGITUDE'] != null ? row['VLLONGITUDE'] as double : 0.0;
+      final roadLatitude = row.containsKey('VLLATITUDE') ? (row['VLLATITUDE'] as double?) ?? 0.0:0.0;
+      final roadLongitude = row.containsKey('VLLONGITUDE') ? (row['VLLONGITUDE'] as double?) ?? 0.0 : 0.0;
 
-      final distance = calculateDistance(latitude, longitude, roadLatitude, roadLongitude);
+      final distanceInKm = calculateDistance(latitude, longitude, roadLatitude, roadLongitude);
 
-      if (distance <= radius) {
+      if (distanceInKm <= 0.060) {
         nearbyRoads.add(row);
       }
     }
     return nearbyRoads;
   }
 
-  void _checkCoordinates() async {
+  Future<void> _checkCoordinates() async {
     final latitude = double.tryParse(_latitudeController.text);
     final longitude = double.tryParse(_longitudeController.text);
 
-    if (latitude != null && longitude != null) {
-      final nearbyRoads = await encontrarRodovias(latitude, longitude, 0.06);
+    if (_nearbyRoads.isNotEmpty) {
+      final firstNearbyRoad = _nearbyRoads.isNotEmpty ? _nearbyRoads[0] : null;
 
-      if (nearbyRoads.isNotEmpty) {
-        final firstNearbyRoad = nearbyRoads[0];
+      if (firstNearbyRoad != null) {
         final userLatitude = latitude;
         final userLongitude = longitude;
-        final roadLatitude = firstNearbyRoad['VLLATITUDE'] as double;
-        final roadLongitude = firstNearbyRoad['VLLONGITUDE'] as double;
-        if (kDebugMode) {
-          print('Coordenadas da rodovia: Latitude $roadLatitude, Longitude $roadLongitude');
+        final roadLatitude = firstNearbyRoad['VLLATITUDE'] as double?;
+        final roadLongitude = firstNearbyRoad['VLLONGITUDE'] as double?;
+
+        if (roadLatitude != null && roadLongitude != null) {
+          if (kDebugMode) {
+            print(
+                'Coordenadas da rodovia: Latitude $roadLatitude, Longitude $roadLongitude');
+          }
+          final distanceInKm = calculateDistance(
+              userLatitude!, userLongitude!, roadLatitude, roadLongitude);
+
+          setState(() {
+            _nearbyRoads.clear();
+            _nearbyRoads.add({'error': 'Endereço não encontrado'});
+            roadName = firstNearbyRoad['SGRODOVIA'] ?? "Não encontrado";
+            if (firstNearbyRoad.containsKey('NUKM')) {
+              km = firstNearbyRoad['NUKM']?.toDouble() ?? 0.0;
+            }
+          });
+        } else {
+          setState(() {
+            roadName = "Não encontrado";
+            km = 0.0;
+          });
         }
-        final distanceInKm = calculateDistance(userLatitude, userLongitude, roadLatitude, roadLongitude);
-        final distanceInMeters = distanceInKm * 1000.0;
-
-        setState(() {
-          _nearbyRoads.clear();
-          _nearbyRoads.add({'error': 'Endereço não encontrado'});
-          //roadName = null;
-          roadName = firstNearbyRoad['SGRODOVIA'];
-          km = firstNearbyRoad['NUKM'];
-
-        });
+        if (kDebugMode) {
+          print('Rodovia: $roadName, Km: $km');
+        }
       } else {
         setState(() {
-          roadName = null;
-          km = null;
+          roadName = "Não encontrado";
+          km = 0.0;
         });
       }
-      if (kDebugMode) {
-        print('Rodovia: $roadName, Km: $km');
-      }
+    } else {
+      setState(() {
+        roadName = "Não encontrado";
+        km = 0.0;
+      });
     }
+
   }
 
   @override
@@ -180,38 +191,74 @@ class _AppScreenState extends State<AppScreen> {
               const SizedBox(height: 10,),
 
               ElevatedButton(
-                onPressed: _checkCoordinates,
+                onPressed: () async {
+                  final latitude = double.tryParse(_latitudeController.text);
+                  final longitude = double.tryParse(_longitudeController.text);
+
+                  if (latitude != null && longitude != null) {
+                    final nearbyRoads = await encontrarRodovias(latitude, longitude, 0.060);
+                    setState(() {
+                      _nearbyRoads.clear();
+                      _nearbyRoads.addAll(nearbyRoads);
+                    });
+                  }
+                },
                 child: const Text("Verificar Coordenadas"),
               ),
               const SizedBox(height: 10,),
 
-              if (_nearbyRoads.isNotEmpty)
-               SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DropdownButton<String>(
-                    items: _nearbyRoads.map((road) {
-                      final roadName = road['SGRODOVIA'] as String?;
-                      final km = road['NUKM'].toString();
-                      // Obtém as coordenadas da rodovia
-                      final roadLatitude = road['VLLATITUDE'] as double;
-                      final roadLongitude = road['VLLONGITUDE'] as double;
-                      // Calcula a distância entre o usuário e a rodovia
-                      final distanceInKm = calculateDistance(_coordinates[0], _coordinates[1], roadLatitude, roadLongitude);
+            if (_nearbyRoads.isNotEmpty) {
+      return Column(
+      children: [
+      SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DropdownButton<String>(
+      items: _nearbyRoads.map((road) {
+      final roadName = road['SGRODOVIA'] as String?;
+      final km = road['NUKM'].toString();
+      // Obtém as coordenadas da rodovia
+      final roadLatitude = road['VLLATITUDE'] as double?;
+      final roadLongitude = road['VLLONGITUDE'] as double?;
+      // Calcula a distância entre o usuário e a rodovia
+      final distanceInKm = calculateDistance(_coordinates[0], _coordinates[1], roadLatitude ?? 0.0, roadLongitude ?? 0.0);
 
-                      return DropdownMenuItem<String>(
-                        value: '$roadName, Km: $km - Distância: ${distanceInKm.toStringAsFixed(2)} metros',
-                        child: Text(_nearbyRoads.isNotEmpty ? '$roadName, Km: $km - Distância: ${distanceInKm.toStringAsFixed(2)} metros'
-                            : 'Nenhuma rodovia próxima encontrada.'),
-                      );
-                    }).toList(),
-                    onChanged: (selectedValue){
-                      // Tratamento
-                    },
-                    hint: const Text('Selecione uma rodovia'),
-                  ),
-                ),
+      if (roadName != null && roadLatitude != null) {
+      final distanceInKm = calculateDistance(
+      _coordinates[0],
+      _coordinates[1],
+      roadLatitude,
+      roadLongitude!,
+      );
 
-              Text('Rodovia: ${roadName ?? "Não encontrado"}, Km: ${km ?? "Não encontrado"}'),
+      return DropdownMenuItem<String>(
+      value: '$roadName, Km: $km - Distância: ${distanceInKm
+          .toStringAsFixed(2)} metros',
+      child: Text(
+      '$roadName, Km: $km - Distância: ${distanceInKm
+          .toStringAsFixed(2)} metros'
+      ),
+      );
+      } else {
+      return const DropdownMenuItem<String>(
+      value: '',
+      child: Text(''),
+      );
+      }
+      }).toList(),
+      onChanged: (selectedValue){
+      // Tratamento
+      },
+      hint: const Text('Selecione uma rodovia'),
+      ),
+      Text('Rodovia: ${roadName ?? "Não encontrado"}, Km: ${km ?? "Não encontrado"}'),
+      ],
+      );
+      } else {
+      return const Text('Nenhuma rodovia próxima encontrada.');
+      },
+
+
+          Text('Rodovia: ${roadName ?? "Não encontrado"}, Km: ${km ?? "Não encontrado"}'),
 
               const SizedBox(height: 20,),
 
@@ -221,9 +268,9 @@ class _AppScreenState extends State<AppScreen> {
                     final databaseHelper = DatabaseHelper();
                     await databaseHelper.deleteDatabase();
                     setState(() {
-                      _databaseInitialized = false; // Marque o banco de dados como não inicializado novamente
-                      roadName = null; // Limpe os dados exibidos, se houver
-                      km = null;
+// Marque o banco de dados como não inicializado novamente
+                      roadName = "Não encontrado"; // Limpe os dados exibidos, se houver
+                      km = 0.0;
                     });
                   } catch (e) {
                     debugPrint('Erro ao deletar o banco de dados: $e');
@@ -231,7 +278,6 @@ class _AppScreenState extends State<AppScreen> {
                 },
                 child: const Text("Deletar Banco de Dados"),
               )
-
             ],
           ),
         ),
