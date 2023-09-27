@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:teste_rodovia/src/services/endereco_proximo.dart';
 import 'package:teste_rodovia/src/services/obter_rodovia.dart';
 import 'package:teste_rodovia/src/widgets/buscar_localizacao_widget.dart';
 import 'package:teste_rodovia/src/widgets/permissao_localizacao_widget.dart';
@@ -46,11 +47,13 @@ class _LocationScreenState extends State<LocationScreen> {
                 onPressed: () async {
                   final position = await getUserLocation();
                   if (position != null) {
-                    final rodoviaInfo = await obterInfoRodovia();
+                    final rodoviaInfoList = await obterInfoRodovia();
                     setState(() {
                       latitude = position.latitude.toString();
                       longitude = position.longitude.toString();
-                      this.rodoviaInfo = rodoviaInfo;
+                      this.rodoviaInfo = rodoviaInfoList as String;
+                      print('Rodovia Info: $rodoviaInfoList');
+
                     });
                   }
                 },
@@ -87,12 +90,13 @@ class _LocationScreenState extends State<LocationScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 15.0),
                 child: ElevatedButton(
                   onPressed: () async {
-                    final latitude = latitudeController.text;
-                    final longitude = longitudeController.text;
-                    final rodoviaInfo =
-                        await verificarCoordenadasNoBanco(latitude, longitude);
+                    final latitude = double.parse(latitudeController.text);
+                    final longitude = double.parse(longitudeController.text);
+                    // final rodoviaInfo =
+                    //     await verificarCoordenadasNoBanco(latitude, longitude);
+                    final proximidade = await enderecoProximo(latitude, longitude);
                     setState(() {
-                      this.rodoviaInfo = rodoviaInfo;
+                      rodoviaInfo = proximidade!;
                     });
                   },
                   child: const Text('Verificar Coordenadas'),

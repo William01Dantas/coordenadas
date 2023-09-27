@@ -1,10 +1,10 @@
-import 'package:teste_rodovia/src/services/calculo_haversine.dart';
+import 'package:teste_rodovia/src/services/calculo_distancia.dart';
 import 'package:teste_rodovia/src/services/obter_rodovia.dart';
 
 Future<String?> enderecoProximo(double userLatitude, userLongitude) async {
   final enderecos = await obterInfoRodovia();
   double distanciaProxima = double.infinity;
-  String? enderecosProximos;
+  String? enderecoProximo;
 
   for (final endereco in enderecos) {
     final distancia = calculateDistance(
@@ -14,9 +14,17 @@ Future<String?> enderecoProximo(double userLatitude, userLongitude) async {
       endereco.longitude,
     );
 
-    if (distancia < 0.09 && distancia < distanciaProxima) {
+    if (distancia <= 0.09 && distancia < distanciaProxima) {
       distanciaProxima = distancia;
-      enderecosProximos = enderecos.enderecosText;
+      print(distanciaProxima);
+      enderecoProximo = "Latitude: ${endereco.latitude}, Longitude: ${endereco.longitude}";
     }
+  }
+
+  if (enderecoProximo != null) {
+    return "Endereços mais próximos: $enderecoProximo";
+  }else {
+    print('Nenhum endereço próximo encontrado.');
+    return "Nenhum endereço próximo encontrado";
   }
 }
