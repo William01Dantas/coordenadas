@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:teste_rodovia/src/db/db.dart';
 import 'package:teste_rodovia/src/widgets/buscar_localizacao_widget.dart';
 
@@ -22,10 +23,14 @@ Future<List<Endereco>> obterInfoRodovia() async {
       );
       return [endereco];
     } else {
-      print('Nenhuma rodovia encontrada no banco de dados.');
+      if (kDebugMode) {
+        print('Nenhuma rodovia encontrada no banco de dados.');
+      }
       return [];
     }
   }
-  print('Posição do usuário não encontrada.');
+  if (kDebugMode) {
+    print('Posição do usuário não encontrada.');
+  }
   return [];
 }

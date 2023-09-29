@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:teste_rodovia/src/services/endereco_proximo.dart';
 import 'package:teste_rodovia/src/services/obter_rodovia.dart';
@@ -21,7 +22,6 @@ class _LocationScreenState extends State<LocationScreen> {
   String rodoviaInfo = "";
   final TextEditingController latitudeController = TextEditingController();
   final TextEditingController longitudeController = TextEditingController();
-
 
   @override
   void initState() {
@@ -47,13 +47,12 @@ class _LocationScreenState extends State<LocationScreen> {
                 onPressed: () async {
                   final position = await getUserLocation();
                   if (position != null) {
-                    final rodoviaInfoList = await obterInfoRodovia();
                     setState(() {
                       latitude = position.latitude.toString();
                       longitude = position.longitude.toString();
-                      this.rodoviaInfo = rodoviaInfoList as String;
-                      print('Rodovia Info: $rodoviaInfoList');
-
+                      if (kDebugMode) {
+                        print(position);
+                      }
                     });
                   }
                 },
@@ -92,9 +91,8 @@ class _LocationScreenState extends State<LocationScreen> {
                   onPressed: () async {
                     final latitude = double.parse(latitudeController.text);
                     final longitude = double.parse(longitudeController.text);
-                    // final rodoviaInfo =
-                    //     await verificarCoordenadasNoBanco(latitude, longitude);
-                    final proximidade = await enderecoProximo(latitude, longitude);
+                    final proximidade = await enderecoProximo(latitude.toString(), longitude.toString(), );
+
                     setState(() {
                       rodoviaInfo = proximidade!;
                     });
