@@ -91,11 +91,18 @@ class _LocationScreenState extends State<LocationScreen> {
                   onPressed: () async {
                     final latitude = double.parse(latitudeController.text);
                     final longitude = double.parse(longitudeController.text);
-                    final proximidade = await enderecoProximo(latitude.toString(), longitude.toString(), );
+                    final rodoviasEncontradas = await verificarCoordenadasNoBanco(latitude as String, longitude as String);
 
-                    setState(() {
-                      rodoviaInfo = proximidade!;
-                    });
+                    if (rodoviasEncontradas.isNotEmpty) {
+                      final rodovia = rodoviasEncontradas.first;
+                      setState(() {
+                        rodoviaInfo = "Rodovia: ${rodovia.sgRodovia}, KM: ${rodovia.nuKm}, Trecho: ${rodovia.cdTrecho}, Distância: ${rodovia.distancia}.";
+                      });
+                    } else {
+                      setState(() {
+                        rodoviaInfo = "Nenhuma rodovia encontrada.";
+                      });
+                    }
                   },
                   child: const Text('Verificar Coordenadas'),
                 ),

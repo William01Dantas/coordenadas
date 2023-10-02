@@ -28,13 +28,15 @@ Future<List<RodoviasInfoCalc>> verificarCoordenadasNoBanco(String latitude, Stri
 
   final List<RodoviasInfoCalc> rodoviasEncontradas = [];
 
-  print(rodoviasEncontradas);
+  if (kDebugMode) {
+    print(rodoviasEncontradas);
+  }
 
   for (final row in result) {
     final rodoviaLat = row['VLLATITUDE'] as double;
     final rodoviaLong = row['VLLONGITUDE'] as double;
 
-    final distancia = calculateDistance(userLat, userLong, rodoviaLat, rodoviaLong);
+    final distancia = calculaDistancia(userLat, userLong, rodoviaLat, rodoviaLong);
 
     if (distancia <= 0.10) {
       final rodoviasInfoCalc = RodoviasInfoCalc(
