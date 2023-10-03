@@ -16,7 +16,7 @@ class RodoviasInfoCalc{
   });
 }
 
-Future<List<RodoviasInfoCalc>> verificarCoordenadasNoBanco(String latitude, String longitude) async {
+Future<List<RodoviasInfoCalc>> verificarCoordenadasNoBanco(String latitude, String longitude, {int limite = 5}) async {
   final db = await DatabaseHelper().database;
   final result = await db.rawQuery('''
     SELECT SGRODOVIA, NUKM, CDTRECHO, VLLATITUDE, VLLONGITUDE
@@ -49,8 +49,10 @@ Future<List<RodoviasInfoCalc>> verificarCoordenadasNoBanco(String latitude, Stri
     }
   }
 
+  rodoviasEncontradas.sort((a, b) => a.distancia.compareTo(b.distancia));
+
   if (rodoviasEncontradas.isNotEmpty) {
-    return rodoviasEncontradas;
+    return rodoviasEncontradas.take(limite).toList();
   } else {
     if (kDebugMode) {
       print('Coordenadas não encontradas no banco de dados.');

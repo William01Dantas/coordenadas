@@ -1,12 +1,15 @@
 import 'package:teste_rodovia/src/services/verifica_coordenadas_services.dart';
 
-Future<String?> enderecoProximo(String userLatitude, String userLongitude) async {
+Future<List<String?>> enderecoProximo(String userLatitude, String userLongitude) async {
   final rodoviasEncontradas = await verificarCoordenadasNoBanco(userLatitude, userLongitude, );
 
   if (rodoviasEncontradas.isNotEmpty) {
-    final rodovia = rodoviasEncontradas.first;
-    return "Rodovia: ${rodovia.sgRodovia}, KM: ${rodovia.nuKm}, Trecho: ${rodovia.cdTrecho}, Distância: ${rodovia.distancia}";
+    final List<String?> enderecos = [];
+    for (final rodovia in rodoviasEncontradas){
+      enderecos.add("Rodovia: ${rodovia.sgRodovia}, KM: ${rodovia.nuKm}, Trecho: ${rodovia.cdTrecho}, Distância: ${rodovia.distancia}");
+    }
+    return enderecos;
   } else {
-    return "Nenhuma rodovia encontrada.";
+    return ["Nenhuma rodovia encontrada."];
   }
 }

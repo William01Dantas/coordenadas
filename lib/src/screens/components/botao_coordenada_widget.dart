@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:teste_rodovia/src/services/clipboard_service.dart';
 
 class BotaoCoordenadas extends StatelessWidget {

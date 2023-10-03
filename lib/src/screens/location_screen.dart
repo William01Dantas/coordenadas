@@ -1,7 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:teste_rodovia/src/services/endereco_proximo.dart';
-import 'package:teste_rodovia/src/services/obter_rodovia.dart';
 import 'package:teste_rodovia/src/widgets/buscar_localizacao_widget.dart';
 import 'package:teste_rodovia/src/widgets/permissao_localizacao_widget.dart';
 
@@ -19,7 +17,7 @@ class LocationScreen extends StatefulWidget {
 class _LocationScreenState extends State<LocationScreen> {
   String latitude = "-27.23660573";
   String longitude = "-48.87444514";
-  String rodoviaInfo = "";
+  List<String> rodoviaInfo = [];
   final TextEditingController latitudeController = TextEditingController();
   final TextEditingController longitudeController = TextEditingController();
 
@@ -35,9 +33,10 @@ class _LocationScreenState extends State<LocationScreen> {
       appBar: AppBar(),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.only(left: 20.0, right: 20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const Text("Verifique sua localização antes de começar"),
               const SizedBox(
@@ -91,23 +90,33 @@ class _LocationScreenState extends State<LocationScreen> {
                   onPressed: () async {
                     final latitude = double.parse(latitudeController.text);
                     final longitude = double.parse(longitudeController.text);
-                    final rodoviasEncontradas = await verificarCoordenadasNoBanco(latitude as String, longitude as String);
+                    final rodoviasEncontradas =
+                        await verificarCoordenadasNoBanco(
+                            latitude.toString(), longitude.toString());
 
                     if (rodoviasEncontradas.isNotEmpty) {
-                      final rodovia = rodoviasEncontradas.first;
                       setState(() {
-                        rodoviaInfo = "Rodovia: ${rodovia.sgRodovia}, KM: ${rodovia.nuKm}, Trecho: ${rodovia.cdTrecho}, Distância: ${rodovia.distancia}.";
+                        rodoviaInfo = rodoviasEncontradas
+                            .map((rodovia) =>
+                                "Rodovia: ${rodovia.sgRodovia}, KM: ${rodovia.nuKm}, Trecho: ${rodovia.cdTrecho}, Distância: ${rodovia.distancia}.")
+                            .toList();
                       });
                     } else {
                       setState(() {
-                        rodoviaInfo = "Nenhuma rodovia encontrada.";
+                        rodoviaInfo = ["Nenhuma rodovia encontrada."];
                       });
                     }
                   },
                   child: const Text('Verificar Coordenadas'),
                 ),
               ),
-              Text('Rodovia: $rodoviaInfo'),
+              //Text('Rodovia: $rodoviaInfo'),
+              Container(
+                height: 300,
+                child: ListView(
+                  children: rodoviaInfo.map((info) => Text(info)).toList(),
+                ),
+              )
             ],
           ),
         ),
