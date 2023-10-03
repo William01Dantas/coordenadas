@@ -18,8 +18,8 @@ class DatabaseHelper {
     throw Exception('Banco de dados não inicializado');
   }
 
-  Future<Map<String, dynamic>> loadJsonData() async {
-    final jsonString = await rootBundle.loadString('assets/etrecoordenadasprod.json');
+  Future<Map<String, dynamic>> loadJsonData(String fileName) async {
+    final jsonString = await rootBundle.loadString('assets/$fileName');
     final jsonData = jsonDecode(jsonString);
     if (kDebugMode) {
       print('JSON carregando: $jsonData');
@@ -30,8 +30,12 @@ class DatabaseHelper {
   // Função para inicializar o banco de dados
   Future<void> initDatabase(Map<String, dynamic> jsonData) async {
     final databasesPath = await getDatabasesPath();
-    final path = join(databasesPath,
-        'ETRECOORDENADASROD.db'); // Defina o nome do seu banco de dados aqui
+    final path = join(databasesPath, 'ETRECOORDENADASROD.db');
+
+    final jsonData = await loadJsonData(
+        'etrecoordenadasprod.json'); // Carrega o JSON existente
+    final newJsonData = await loadJsonData(
+        'etrecoordenadasrodsc110.json'); // Carrega o novo JSON
 
     _database = await openDatabase(
       path,
@@ -97,6 +101,15 @@ CREATE TABLE IF NOT EXISTS ETRECOORDENADASROD (
             await db.insert('ETRECOORDENADASROD', data);
           }
         }
+
+        // Carregue os dados do novo arquivo JSON (se existir)
+        if (newJsonData.containsKey('ETRECOORDENADASROD')) {
+          final List<dynamic> newdataList = newJsonData['ETRECOORDENADASROD'];
+          for (final data in newdataList) {
+            await db.insert('ETRECOORDENADASROD', data);
+          }
+        }
+
         if (kDebugMode) {
           print('Banco de dados criado com sucesso em: $path');
         }
@@ -129,12 +142,11 @@ CREATE TABLE IF NOT EXISTS ETRECOORDENADASROD (
       final path = join(databasesPath, 'ETRECOORDENADASROD.db');
       final file = File(path);
 
-      if (await file.exists()){
+      if (await file.exists()) {
         await file.delete();
       }
-    }catch (e) {
+    } catch (e) {
       throw Exception('Erro ao deletar o banco de dados: $e');
     }
   }
-
 }
